@@ -1,5 +1,9 @@
 package main
 
+/* -------------------------------------------------------------------------- */
+/*                        Importing Necessary packages                        */
+/* -------------------------------------------------------------------------- */
+
 import (
 	"encoding/json" //To encode and decode json
 	"fmt"
@@ -16,6 +20,9 @@ import (
 	//"github.com/PuerkitoBio/goquery"
 )
 
+/* -------------------------------------------------------------------------- */
+/*                         Defining our Data structure                        */
+/* -------------------------------------------------------------------------- */
 
 type statistics struct {
 	Rank       string `json:"rank"`
@@ -44,7 +51,7 @@ type information struct {
 	Genres    string `json:"genres"`
 	Duration  string `json:"duration"`
 	Rating    string `json:"rating"`
-} 
+}
 
 type voiceChar struct {
 	CharectorName         string `json:"charectorName"`
@@ -57,8 +64,8 @@ type staff struct {
 	Role string `json:"role"`
 }
 type Anime struct {
-	Title      string `json:"title"`
-	Statistics statistics  `json:"statistics"`
+	Title             string        `json:"title"`
+	Statistics        statistics    `json:"statistics"`
 	Synopsis          string        `json:"synopsis"`
 	Background        string        `json:"background"`
 	RelatedAnime      []interface{} `json:"relatedAnime"`
@@ -67,127 +74,139 @@ type Anime struct {
 	OpeningTheme      string        `json:"opening Theme"`
 	EndingTheme       string        `json:"ending Theme"`
 	Reviews           []interface{} `json:"reviews"`
-	AlternativeTitles alternatives `json:"alternativeTitles"`
-	Information information     `json:"information"`
+	AlternativeTitles alternatives  `json:"alternativeTitles"`
+	Information       information   `json:"information"`
 }
 
- //"anime_detail_related_anime"
+ /* -------------------------------------------------------------------------- */
+ /*          Function to get a anime details with the passed anime ID          */
+ /* -------------------------------------------------------------------------- */
 
-/******************Function to get a anime details**************************/
+func getAnime(w http.ResponseWriter, r *http.Request) { // Package http provides HTTP client and server implementations.
+	//An http.ResponseWriter value assembles the HTTP server's response; by writing to it, we send data to the HTTP client
 
-func getAnime(w http.ResponseWriter, r *http.Request) {
-	
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json") //setting headers
 	params := mux.Vars(r)
-	id:=params["id"]
-	url:="https://myanimelist.net/anime/"+id
-	
-	var responseData Anime
-	var isVoiceCharsDone bool =false
-	c := colly.NewCollector()
-	c.OnError(func(_ *colly.Response, err error) {
+	id := params["id"]                           //Getting the id from params
+	url := "https://myanimelist.net/anime/" + id // Appending the user ID with URL of myanimelist.net
+
+	var responseData Anime //storing the response data of type Anime in responseData
+	var isVoiceCharsDone bool = false
+	var infoCount int = 0
+
+	/* ---------- Initialising colly and stating of the scraping phase ---------- */
+
+	c := colly.NewCollector()                      // Instantiate default collector
+	c.OnError(func(_ *colly.Response, err error) { // Handling error with colly
 		log.Println("Something went wrong:", err)
 	})
-	
-	// c.OnHTML("a",func(e *colly.HTMLElement){      INFORMATION
-	// 	switch(e.Attr("href")){
-	// 	case "https://myanimelist.net/topanime.php?type=tv":
-	// 		responseData.Information.Type=e.Text
-	// 	case "https://myanimelist.net/anime/season/2021/summer":
-	// 		responseData.Information.Premiered=e.Text
-	// 	case "/anime/producer/159/":
-	// 		responseData.Information.Producers=e.Text
-	// 	}
-	// })
-	c.OnHTML("h1",func(e *colly.HTMLElement){
-		switch(e.Attr("class")){
+
+	/* ----------------------- Finding title of the anime ----------------------- */
+
+	c.OnHTML("h1", func(e *colly.HTMLElement) { // On every a element which has h1 attribute call callback
+		switch e.Attr("class") { // Check for the class atribute and match the respective class with the case then insert values
 		case "title-name h1_bold_none":
-			responseData.Title=e.ChildText("strong")
+			responseData.Title = e.ChildText("strong")
 		}
 	})
-	c.OnHTML("td",func(e *colly.HTMLElement){
-		switch(e.Attr("valign")){
+	/* --------------------- Finding background of the anime -------------------- */
+
+	c.OnHTML("td", func(e *colly.HTMLElement) {
+		switch e.Attr("valign") { // Check for the valign atribute and match the respective class with the case then insert values
 		case "top":
-			responseData.Background=e.Text
+			responseData.Background = e.Text
 		}
 	})
-	c.OnHTML("div",func(e *colly.HTMLElement){
-		switch(e.Attr("style")){
-		case "width: 225px":
-			e.ForEach("div ", func(i int, h *colly.HTMLElement) {
-				responseData.Information = information{ 
-					Type: h.ChildText("div > a"),
-					// Role: h.ChildText("td > div > small"),
-					// VoiceActorName: h.ChildText("td > table > tbody > tr > td >a"),
-					// VoiceActorNationality: h.ChildText("td > table > tbody > tr > td > small"),
-				}
-			})
-			
+
+	/* -------------------- Finding information of the anime -------------------- */
+
+	c.OnHTML("div", func(e *colly.HTMLElement) {
+		switch e.Attr("id") {
+		case "content":
+			if(infoCount==0){
+				e.ForEach("table > tbody > tr > td > div", func(i int, h *colly.HTMLElement) { 
+					x := h.Text
+				})
+			}
 		}
 	})
-	c.OnHTML("div",func(e *colly.HTMLElement){
-		switch(e.Attr("class")){
+
+	/* ----- Finding Voice Charectors,score,staff,openingtheme,closing theme ----- */
+
+	c.OnHTML("div", func(e *colly.HTMLElement) {
+		switch e.Attr("class") { // Check for the class atribute and match the respective class with the case then insert values
 		case "score-label score-8":
-			responseData.Statistics.Score=e.Text
+			responseData.Statistics.Score = e.Text
 		case "detail-characters-list clearfix":
 			if !isVoiceCharsDone {
-				e.ForEach("div > div > table > tbody > tr", func(i int, h *colly.HTMLElement) {
-					responseData.VoiceChars = append(responseData.VoiceChars, voiceChar{ 
-						CharectorName: h.ChildText("td > h3 > a"),
-						Role: h.ChildText("td > div > small"),
-						VoiceActorName: h.ChildText("td > table > tbody > tr > td >a"),
-						VoiceActorNationality: h.ChildText("td > table > tbody > tr > td > small"),
+				e.ForEach("div > div > table > tbody > tr", func(i int, h *colly.HTMLElement) { //iterating from the parent div to the child div using for each
+					responseData.VoiceChars = append(responseData.VoiceChars, voiceChar{ //appending values in the voicechars slice
+						CharectorName:         h.ChildText("td > h3 > a"),                          //Re-iterating to the exact position of the element to get the values
+						Role:                  h.ChildText("td > div > small"),                     //Re-iterating to the exact position of the element to get the values
+						VoiceActorName:        h.ChildText("td > table > tbody > tr > td >a"),      //Re-iterating to the exact position of the element to get the values
+						VoiceActorNationality: h.ChildText("td > table > tbody > tr > td > small"), //Re-iterating to the exact position of the element to get the values
 					})
 				})
-				isVoiceCharsDone=true
-			}else{
-				e.ForEach("div > div > table > tbody > tr", func(i int, h *colly.HTMLElement) {
-					responseData.Staff = append(responseData.Staff, staff{ 
+				isVoiceCharsDone = true //Since voice charectors and staff have the sme div class and were being implemented in the saeme function
+				//we have used a flag variable isVoiceCharsDone to indicate if the Voicechars is already visited
+			} else {
+				e.ForEach("div > div > table > tbody > tr", func(i int, h *colly.HTMLElement) { //iterating from the parent div to the child div using for each
+					responseData.Staff = append(responseData.Staff, staff{ //appending values in the staff slice
 						Name: h.ChildText("td > a"),
 						Role: h.ChildText("td > div> small"),
 					})
 				})
 			}
-		case "margin-top: 15px;":
-			responseData.Background=e.Text
+		case "margin-top: 15px;": //Similarly matching other classes
+			responseData.Background = e.Text
 		case "theme-songs js-theme-songs opnening":
-			responseData.OpeningTheme=e.ChildText("span")
+			responseData.OpeningTheme = e.ChildText("span")
 		case "theme-songs js-theme-songs ending":
-			responseData.EndingTheme=e.ChildText("span")
-		// case "spaceit_pad":
-		// 	responseData.AlternativeTitles.English=e.ChildText("span  >")
-		
+			responseData.EndingTheme = e.ChildText("span")
+			// case "spaceit_pad":
+			// 	responseData.AlternativeTitles.English=e.ChildText("span  >")
+
 		}
 	})
-	c.OnHTML("span",func(e *colly.HTMLElement){
-		switch(e.Attr("class")){
+
+	/* ---------------- Finding rank and popularity of the anime ---------------- */
+
+	c.OnHTML("span", func(e *colly.HTMLElement) {
+		switch e.Attr("class") {
 		case "numbers ranked":
-			responseData.Statistics.Rank=e.ChildText("span > strong")
+			responseData.Statistics.Rank = e.ChildText("span > strong")
 		case "numbers popularity":
-			responseData.Statistics.Polularity=e.ChildText("span > strong")
+			responseData.Statistics.Polularity = e.ChildText("span > strong")
 		}
 	})
+
+	/* ---------------------- Finding synopsis of the anime --------------------- */
+
 	c.OnHTML("p", func(e *colly.HTMLElement) {
-		switch(e.Attr("itemprop")){
+		switch e.Attr("itemprop") {
 		case "description":
-			responseData.Synopsis=e.Text
+			responseData.Synopsis = e.Text
 		}
 	})
+
+	/* ---------------------- Finding synopsis of the anime --------------------- */
 
 	c.OnScraped(func(r *colly.Response) {
 		fmt.Println("Finished", r.Request.URL)
 		json.NewEncoder(w).Encode(responseData)
 	})
-	c.Visit(url)
-
+	c.Visit(url) // Start scraping on the url
 
 }
 
-/******************Main Function to aggregate methods and functions**************************/
+/* -------------------------------------------------------------------------- */
+/*       main function to aggregate methods and functions                     */
+/* -------------------------------------------------------------------------- */
+
 func main() {
 	// port:=os.Getenv("PORT")
-	r := mux.NewRouter()
-	r.HandleFunc("/anime/{id}", getAnime).Methods("GET")
-	fmt.Println("STARTING SERVER AT PORT 8000\n")
+	r := mux.NewRouter()                                 //Package gorilla/mux implements a request router and dispatcher for matching incoming requests to their respective handler.
+	r.HandleFunc("/anime/{id}", getAnime).Methods("GET") // mapping route URL paths to handlers
+	fmt.Println("STARTING SERVER AT PORT 8000\n")        // More info on mux here ---> https://github.com/gorilla/mux
 	log.Fatal(http.ListenAndServe(":"+"8000", r))
 }
