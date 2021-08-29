@@ -37,4 +37,8 @@ go run main.go
 * Demo Video - https://mighty-basin-31398.herokuapp.com/anime/41488
 * Live API Endpoint : https://mighty-basin-31398.herokuapp.com/anime/41488
 
+## Demo with different anime Ids
+* https://mighty-basin-31398.herokuapp.com/anime/41488
+* https://mighty-basin-31398.herokuapp.com/anime/39247
+* https://mighty-basin-31398.herokuapp.com/anime/48580
 
