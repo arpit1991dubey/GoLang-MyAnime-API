@@ -14,14 +14,11 @@ This RESTful API with Go is build using using **gorilla/mux** (A nice mux librar
 - [x] Wrote test for the endpoint APIs.
 
 ## Installation & Run
-```bash
-# Download this project
+```
 git clone github.com/mingrammer/go-todo-rest-api-example
 ```
 
 ```
-
-```bash
 # Build and Run
 cd go-todo-rest-api-example
 go build test
@@ -35,6 +32,11 @@ go run main.go
 
 #### /anime/id
 * `GET` : Get all the details associated with that anime ID.
+
+
+## Demo
+
+Demo Video - https://mighty-basin-31398.herokuapp.com/anime/41488
 
 
 
