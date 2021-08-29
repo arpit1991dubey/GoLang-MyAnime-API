@@ -24,8 +24,6 @@ cd go-todo-rest-api-example
 go build test
 go run main.go
 
-
-# API Endpoint : https://mighty-basin-31398.herokuapp.com/anime/41488
 ```
 
 ## API
@@ -36,7 +34,7 @@ go run main.go
 
 ## Demo
 
-Demo Video - https://mighty-basin-31398.herokuapp.com/anime/41488
-
+# Demo Video - https://mighty-basin-31398.herokuapp.com/anime/41488
+# Live API Endpoint : https://mighty-basin-31398.herokuapp.com/anime/41488
 
 
