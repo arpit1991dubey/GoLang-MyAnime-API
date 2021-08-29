@@ -15,12 +15,12 @@ This RESTful API with Go is build using using **gorilla/mux** (A nice mux librar
 
 ## Installation & Run
 ```
-git clone github.com/mingrammer/go-todo-rest-api-example
+git clone https://git.legalforcelaw.com/18BLC1084/18BLC1084-GoLang-2.git
 ```
 
 ```
 # Build and Run
-cd go-todo-rest-api-example
+cd 18BLC1084-GoLang-2
 go build test
 go run main.go
 
@@ -29,7 +29,7 @@ go run main.go
 ## API
 
 #### /anime/id
-* `GET` : Get all the details associated with that anime ID.
+* `GET` : Get all the details associated with that particular anime ID.
 
 
 ## Demo
