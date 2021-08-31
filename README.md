@@ -3,7 +3,7 @@
 # Go MyAnime REST API 
 A RESTful API build with Go which scrapes https://myanimelist.net with the anime ID and provides all the datails regarding that particular anime 
 
-This RESTful API with Go is build using using **gorilla/mux** (A nice mux library) and **coly** (Fast and Elegant Scraping Framework for Gophers)
+This RESTful API with GO build using using **gorilla/mux** (A nice mux library) and **coly** (Fast and Elegant Scraping Framework for Gophers)
 
 ## Todo
 
