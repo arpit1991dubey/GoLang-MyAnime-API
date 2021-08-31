@@ -16,7 +16,7 @@ This RESTful API with GO build using using **gorilla/mux** (A nice mux library) 
 
 ## Installation & Run
 ```
-git clone https://git.legalforcelaw.com/18BLC1084/18BLC1084-GoLang-2.git
+git clone https://github.com/arpit1991dubey/GoLang-MyAnime-API.git
 ```
 ```
 # Dependencies installation
