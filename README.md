@@ -12,7 +12,7 @@ This RESTful API with Go is build using using **gorilla/mux** (A nice mux librar
 - [x] Installed and implemented colly for scraping the website.
 - [x] Organized the code with packages.
 - [x] Scraped all the details from the website for the specific ID or Class tag.
-- [x] Wrote test for the endpoint APIs.
+- [x] Wrote unit test for the API endpoint.
 
 ## Installation & Run
 ```
