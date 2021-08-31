@@ -8,8 +8,8 @@ import (
 	"encoding/json" //To encode and decode json
 	"fmt"
 	"github.com/gorilla/mux" //The name mux stands for "HTTP request multiplexer". Like the standard http.ServeMux, mux.Router matches incoming requests against a list of registered routes
-	//"os"
-
+	"os"
+	"strings"
 	//"golang.org/x/text/number"
 	"log" //To log Errors
 	//"math/rand"              // To generate random values
@@ -28,8 +28,8 @@ type statistics struct {
 	Rank       string `json:"rank"`
 	Polularity string `json:"polularity"`
 	Score      string `json:"score"`
-	Favorites  int    `json:"favorites"`
-	Members    int    `json:"members"`
+	Favorites  string   `json:"favorites"`
+	Members    string   `json:"members"`
 }
 
 type alternatives struct {
@@ -67,13 +67,10 @@ type Anime struct {
 	Title             string        `json:"title"`
 	Statistics        statistics    `json:"statistics"`
 	Synopsis          string        `json:"synopsis"`
-	Background        string        `json:"background"`
-	RelatedAnime      []interface{} `json:"relatedAnime"`
 	VoiceChars        []voiceChar   `json:"voiceChars"`
 	Staff             []staff       `json:"staff"`
 	OpeningTheme      string        `json:"opening Theme"`
 	EndingTheme       string        `json:"ending Theme"`
-	Reviews           []interface{} `json:"reviews"`
 	AlternativeTitles alternatives  `json:"alternativeTitles"`
 	Information       information   `json:"information"`
 }
@@ -84,7 +81,7 @@ type Anime struct {
 
 func getAnime(w http.ResponseWriter, r *http.Request) { // Package http provides HTTP client and server implementations.
 	//An http.ResponseWriter value assembles the HTTP server's response; by writing to it, we send data to the HTTP client
-
+	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "application/json") //setting headers
 	params := mux.Vars(r)
 	id := params["id"]                           //Getting the id from params
@@ -92,7 +89,7 @@ func getAnime(w http.ResponseWriter, r *http.Request) { // Package http provides
 
 	var responseData Anime //storing the response data of type Anime in responseData
 	var isVoiceCharsDone bool = false
-	var infoCount int = 0
+	//var infoCount int = 0
 
 	/* ---------- Initialising colly and stating of the scraping phase ---------- */
 
@@ -109,27 +106,62 @@ func getAnime(w http.ResponseWriter, r *http.Request) { // Package http provides
 			responseData.Title = e.ChildText("strong")
 		}
 	})
-	/* --------------------- Finding background of the anime -------------------- */
 
-	c.OnHTML("td", func(e *colly.HTMLElement) {
-		switch e.Attr("valign") { // Check for the valign atribute and match the respective class with the case then insert values
-		case "top":
-			responseData.Background = e.Text
-		}
-	})
+	/* -------------------- Finding information and alternatives of the anime -------------------- */
 
-	/* -------------------- Finding information of the anime -------------------- */
+
 
 	c.OnHTML("div", func(e *colly.HTMLElement) {
-		switch e.Attr("id") {
-		case "content":
-			if(infoCount==0){
-				e.ForEach("table > tbody > tr > td > div", func(i int, h *colly.HTMLElement) { 
-					x := h.Text
-				})
-			}
-		}
-	})
+        switch e.Attr("id") {
+        case "content":
+                e.ForEach("table > tbody > tr > td > div", func(i int, h *colly.HTMLElement) {
+                    if i == 0 {
+                        h.ForEach("div", func(j int, k *colly.HTMLElement) {
+                            switch j {
+                            case 6:
+                                responseData.AlternativeTitles.English = strings.Split(k.Text, ":")[1]
+                            case 7:
+                                responseData.AlternativeTitles.Synonyms = strings.Split(k.Text, ":")[1]
+                            case 8:
+                                responseData.AlternativeTitles.Japanese = strings.Split(k.Text, ":")[1]
+                            case 9:
+                                responseData.Information.Type = strings.Split(k.Text, ":")[1]
+                            case 10:
+                                responseData.Information.Episodes =strings.Split(k.Text, ":")[1]
+                            case 11:
+                                responseData.Information.Status = strings.Split(k.Text, ":")[1]
+                            case 12:
+                                responseData.Information.Aired = strings.Split(k.Text, ":")[1]
+                            case 13:
+                                responseData.Information.Premiered = strings.Split(k.Text, ":")[1]
+                            case 14:
+								responseData.Information.Broadcast = strings.Split(k.Text, ":")[1]
+							case 15:
+                                responseData.Information.Producers = strings.Split(k.Text, ":")[1]
+                            case 16:
+                                responseData.Information.Licensors = strings.Split(k.Text, ":")[1]
+                            case 17:
+                                responseData.Information.Studios = strings.Split(k.Text, ":")[1]
+                            case 18:
+                                responseData.Information.Source = strings.Split(k.Text, ":")[1]
+                            case 19:
+                                responseData.Information.Genres = strings.Split(k.Text, ":")[1]
+                            case 20:
+                                responseData.Information.Duration = strings.Split(k.Text, ":")[1]
+                            case 21:
+								responseData.Information.Rating = strings.Split(k.Text, ":")[1]
+							case 27:
+								responseData.Statistics.Members=strings.Split(k.Text, ":")[1]
+							case 28:
+								responseData.Statistics.Favorites=strings.Split(k.Text, ":")[1]
+                            }
+                           
+                        })
+                    }
+                })
+            }
+        
+    })
 
 	/* ----- Finding Voice Charectors,score,staff,openingtheme,closing theme ----- */
 
@@ -157,8 +189,6 @@ func getAnime(w http.ResponseWriter, r *http.Request) { // Package http provides
 					})
 				})
 			}
-		case "margin-top: 15px;": //Similarly matching other classes
-			responseData.Background = e.Text
 		case "theme-songs js-theme-songs opnening":
 			responseData.OpeningTheme = e.ChildText("span")
 		case "theme-songs js-theme-songs ending":
@@ -204,9 +234,9 @@ func getAnime(w http.ResponseWriter, r *http.Request) { // Package http provides
 /* -------------------------------------------------------------------------- */
 
 func main() {
-	// port:=os.Getenv("PORT")
+	port:=os.Getenv("PORT") // Setting port for deployment
 	r := mux.NewRouter()                                 //Package gorilla/mux implements a request router and dispatcher for matching incoming requests to their respective handler.
 	r.HandleFunc("/anime/{id}", getAnime).Methods("GET") // mapping route URL paths to handlers
-	fmt.Println("STARTING SERVER AT PORT 8000\n")        // More info on mux here ---> https://github.com/gorilla/mux
-	log.Fatal(http.ListenAndServe(":"+"8000", r))
+	fmt.Println("STARTING SERVER AT PORT 8000")        // More info on mux here ---> https://github.com/gorilla/mux
+	log.Fatal(http.ListenAndServe(":"+port, r))
 }
